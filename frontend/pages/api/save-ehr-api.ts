@@ -1,5 +1,6 @@
 //API process to save ehr
 import type { NextApiRequest, NextApiResponse } from 'next';
+import axios from 'axios'
 import { json } from 'stream/consumers';
 //use localstorage
 
@@ -12,7 +13,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             data: null
           });
     }
-    const { structuredEhr } = req.body;
+ /*
     if (!structuredEhr || !structuredEhr.report) {
         return res.status(400).json({
             status: "error",
@@ -20,9 +21,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             message: "No structed EHR data",
             data: null,
         });
-    
-    }
+ 
+    }  */ 
     try {
+    const { structuredEhr } = req.body;
+    const ehrId = structuredEhr?.ehrId;
+    const visitDate = new Date().toISOString();
+    const doctorName = structuredEhr?.report?.doctor_name || "Unknown Doctor";
+    
+    const flatComposition = {
+      "ctx/language": "en",
+      "ctx/territory": "US",
+      "ctx/composer_name": doctorName,
+      "ctx/start_time": visitDate,
+
+      "ehr_data/symptoms": structuredEhr.report?.symptoms || '',
+      "ehr_data/diagnosis": structuredEhr.report?.diagnosis || '',
+      "ehr_data/treatment": structuredEhr.report?.treatment || '',
+      "ehr_data/others": structuredEhr.report?.OTHERS || ''
+    }
+        //const response = await axios.post(
+        const response = await axios.post(
+      `http://localhost:8080/ehrbase/rest/openehr/v1/composition?ehrId=${ehrId}&templateId=voice-ehr-template&format=FLAT`,
+      flatComposition,
+      { headers: { 'Content-Type': 'application/json' } }
+    )
+
         console.log('Debug save EHR data:',JSON.stringify(structuredEhr, null, 2)); // Log the received data
         return res.status(200).json({
             status: "success",

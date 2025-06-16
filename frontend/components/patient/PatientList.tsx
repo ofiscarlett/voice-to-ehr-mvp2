@@ -6,13 +6,15 @@ import Image from 'next/image';
 interface Patient {
   id: string;
   name: string;
+  ehr_id?: string; // Optional EHR ID for patients with EHR data
+  // You can add more fields as needed
 }
 
 const patients: Patient[] = [
-  { id: '120379-345A', name: 'Aino Saaristo' },
-  { id: '230481-678B', name: 'Mikael Virtala' },
-  { id: '041290-912C', name: 'Helmi Koivisto' },
-  { id: '310365-127D', name: 'Eero Niemelä' },
+  { id: '120379-345A', name: 'Aino Saaristo',  "ehr_id": "a4f11899-8231-4995-bdc2-09fd2559282a" },
+  { id: '230481-678B', name: 'Mikael Virtala', "ehr_id": "350a9ea1-1d4d-4a27-8c9c-c4d9379a4e6c" },
+  { id: '041290-912C', name: 'Helmi Koivisto', "ehr_id": "b23bf41e-1f95-40e4-a74f-626c1df3ca01" },
+  { id: '310365-127D', name: 'Eero Niemelä', "ehr_id": "14ba68ee-157b-4bda-bca9-00692f8e971a" },
 ];
 
 export default function PatientList() {

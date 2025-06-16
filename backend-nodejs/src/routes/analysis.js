@@ -3,9 +3,16 @@ const axios = require('axios');
 const dotenv = require('dotenv');
 const createClient = require ('@azure-rest/ai-inference').default;
 const { AzureKeyCredential } = require('@azure/core-auth');
-const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-4';
-const mockCases = require('./mockCases.json'); // Import mock cases from JSON file
 dotenv.config();
+//const result = dotenv.config();
+//console.log('[DEBUG] dotenv config result:', result);
+//console.log('[DEBUG] Current AZURE_OPENAI_DEPLOYMENT =', process.env.AZURE_OPENAI_DEPLOYMENT);
+
+//const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-4';
+const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-4-2';
+
+const mockCases = require('./mockCases.json'); // Import mock cases from JSON file
+
 const router = express.Router();
 
 const client = new createClient(
@@ -96,6 +103,8 @@ function sanitizeJSON(jsonString) {
 
 
 router.post('/analyze', async (req, res) => {
+  console.log('[ENV] AZURE_OPENAI_DEPLOYMENT =', process.env.AZURE_OPENAI_DEPLOYMENT);
+
   try {
     const { text, caseId } = req.body;
     const analysisText = caseId ? (mockCases[caseId]?.text || text) : text;
@@ -110,7 +119,7 @@ router.post('/analyze', async (req, res) => {
         error: true
       });
     }
-    //console.log('[AZURE DEPLOYMENT]', deploymentName);
+    console.log('[AZURE DEPLOYMENT]', deploymentName);
     //console.log('[AZURE ENDPOINT]', process.env.AZURE_OPENAI_ENDPOINT);
   
   
@@ -179,6 +188,11 @@ router.post('/analyze', async (req, res) => {
     });
 
   } catch (err) {
+      if (err.statusCode === 429) {
+    console.warn('[RETRY] Hit rate limit. Retrying in 30s...');
+    await new Promise(res => setTimeout(res, 30000));
+    // call Azure API again
+  }
     console.error('Analysis error:', err);
     res.status(500).json({
       status: "error",
