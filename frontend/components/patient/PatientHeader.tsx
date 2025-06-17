@@ -1,15 +1,15 @@
 'use client';
 
 interface Patient {
-  id: string;
+  id_number: string;
   name: string;
 }
 
 const patients: Patient[] = [
-  { id: '120379-345A', name: 'Aino Saaristo' },
-  { id: '230481-678B', name: 'Mikael Virtala' },
-  { id: '041290-912C', name: 'Helmi Koivisto' },
-  { id: '310365-127D', name: 'Eero Niemelä' },
+  { id_number: '120379-345A', name: 'Aino Saaristo' },
+  { id_number: '230481-678B', name: 'Mikael Virtala' },
+  { id_number: '041290-912C', name: 'Helmi Koivisto' },
+  { id_number: '310365-127D', name: 'Eero Niemelä' },
 ];
 
 interface PatientHeaderProps {
@@ -17,7 +17,7 @@ interface PatientHeaderProps {
 }
 
 export default function PatientHeader({ patientId }: PatientHeaderProps) {
-  const patient = patients.find(p => p.id === patientId);
+  const patient = patients.find(p => p.id_number === patientId);
 
   if (!patient) {
     return (
@@ -37,7 +37,7 @@ export default function PatientHeader({ patientId }: PatientHeaderProps) {
         </div>
         <div>
           <span className="text-[16px] text-[#171717]">Patient ID: </span>
-          <span className="text-[16px] text-[#171717]">{patient.id}</span>
+          <span className="text-[16px] text-[#171717]">{patient.id_number}</span>
         </div>
       </div>
     </div>
