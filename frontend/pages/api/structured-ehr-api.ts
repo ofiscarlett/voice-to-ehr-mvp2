@@ -5,7 +5,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method !== "POST") {
     return res.status(405).json({ message: "Method not allowed" });
   }
-    const { text } = req.body;
+    const { text, ehr_id } = req.body;
 
     console.log("Received text:", text); // Log the received text
     if (!text || text.length < 10) {
@@ -20,13 +20,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       // Process the text here, e.g., save it to a database or perform some analysis
       console.log("Debug processing text:", text); // Log the text being processed
-//test new code
       const backendResponse = await fetch("http://localhost:5001/api/analysis/analyze", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, ehr_id }),//add ehr_id to get ehrid
       });
       const BackendResult = await backendResponse.json();
 
@@ -57,42 +56,3 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         });
     }   
 }
-//old code
-/*
-      const response = await fetch("http://localhost:5000/api/analysis/analyze", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ text }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        console.log('Debug API ：', data);
-        return res.status(200).json({
-            status: "success",
-            code: 200,
-            message: "Analysis completed",
-            data,
-        });
-      } else {
-        console.warn('Debug API error', response.status);
-        return res.status(response.status).json({
-            status: "error",
-            code: response.status,
-            message: "Analysis service failed",
-          });
-      }
-      /*
-       if (!response.ok) {
-        throw new Error('Analysis service failed');
-      }
-        const data = await response.json();
-        console.log("Debug received data:", data); // Log the received data
-        return res.status(200).json({
-            status: 'success',
-            code: 200,
-            message: 'Analysis completed',
-            data,
-          });
-          */

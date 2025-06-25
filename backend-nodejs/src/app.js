@@ -14,6 +14,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/patients', require('./routes/patients'));
 app.use('/api/voice', require('./routes/voice'));
 app.use('/api/analysis', require('./routes/analysis'));
+app.use('/api/saveToEhr', require('./routes/saveToEhr'));
 
 
 // Health check

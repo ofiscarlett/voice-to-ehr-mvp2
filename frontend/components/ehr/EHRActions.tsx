@@ -1,19 +1,32 @@
 'use client';
 
 import { useState } from 'react';
+//get doctor name from auth hardcode and save to ehr
+import { useContext } from 'react';
+import { useAuth } from '../../components/auth/AuthContext';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+//get ehr id from patientmap
+import { useParams } from 'next/navigation';
+import { patientMap } from '@/components/libs/patientMap';
+
 
 interface EHRActionsProps {
   onSave?: () => void;
+  ehrId?: string; // Optional, used when creating new EHRs
+  patientId?: string; // Optional, used when creating new EHRs
   disabled?: boolean;
   structuredEhr?: any;
 }
 
 export default function EHRActions({ onSave, disabled = false, structuredEhr }: EHRActionsProps) {
+  const { doctor } = useAuth();
   const router = useRouter();
   const [showModal, setShowModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const params = useParams();
+  const patientId = params?.id as string;
+  const ehrId = patientMap[patientId];
 
   const handleSave = async () => {
     if (!structuredEhr) return;
@@ -25,7 +38,12 @@ export default function EHRActions({ onSave, disabled = false, structuredEhr }: 
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ structuredEhr }),
+        //body: JSON.stringify({ structuredEhr }),
+          body: JSON.stringify({
+          ehr_id: patientMap[patientId], // or from API
+          doctor_name: doctor?.name || 'unknown',
+          structuredEhr,
+        }),
       });
 
       if (!response.ok) {

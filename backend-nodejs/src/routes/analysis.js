@@ -10,7 +10,7 @@ const supabase = createSupabaseClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
-//mapping the supabase client to the global scope
+flatComposition = require('@supabase/supabase-js').flatComposition;
 
 //const result = dotenv.config();
 //console.log('[DEBUG] dotenv config result:', result);
@@ -19,7 +19,7 @@ const supabase = createSupabaseClient(
 //const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-4';
 const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-4-2';
 
-//const mockCases = require('./mockCases.json'); // Import mock cases from JSON file
+const mockCases = require('./mockCases.json'); // Import mock cases from JSON file
 
 const router = express.Router();
 
@@ -33,6 +33,7 @@ const client = new createAzureClient(
 //tell ai what is its job
 const systemPrompt = `You are a medical text analyzer. Analyze the given medical text and extract structured information in four categories:
 
+
 1. Symptoms (what the patient is experiencing)
 2. Diagnosis (confirmed medical condition)
 3. Treatment (prescribed medications, procedures, or recommendations)
@@ -45,23 +46,27 @@ Also:
       "possibleConditions": ["<same as diagnosis>"],
       "confidence": 1.0,
       "source": "doctor"
-    },
+    }
     "aiTreatment": {
       "suggestions": ["<same as treatment>"],
       "confidence": 1.0,
       "source": "doctor"
     }
-- If the doctor did not provide diagnosis or treatment:
+- If the doctor **did not provide** diagnosis or treatment:
     - Generate reasonable guesses.
-    - Set "source" to "ai" with estimated confidence between 0.7–0.95.
-    - Add appropriate warning(s) such as:
+    - Set "source" to "ai" and estimate "confidence" from 0.7 to 0.95.
+    - Add a warning: "AI-generated diagnosis is for reference only." or "AI-suggested treatment is for reference only."
++ If the doctor does not provide a diagnosis or treatment:
+    - Generate reasonable guesses.
+    - Set "source" to "ai" with confidence (0.7–0.95).
+    - Add the appropriate warning(s):
         - "No treatment was provided by the doctor in the input text."
         - "AI-suggested treatment is for reference only."
         - "No diagnosis was provided by the doctor in the input text."
         - "AI-generated diagnosis is for reference only."
+Format the response as valid JSON inside a markdown code block like this:
 
-Format the response as valid JSON, with no markdown formatting. Do NOT use triple backticks. Example:
-
+\`\`\`json
 {
   "report": {
     "symptoms": "...",
@@ -79,21 +84,21 @@ Format the response as valid JSON, with no markdown formatting. Do NOT use tripl
       "source": "doctor" | "ai"
     }
   },
-  "warnings": []
+  "warnings": ["..."]
 }
-
-Only return raw JSON. Do not wrap your response in any markdown block or backticks.
+\`\`\`
 
 Rules:
-- Use null only for fields like symptoms/diagnosis/treatment if truly not found.
+- Use "null" only for fields like symptoms/diagnosis/treatment if they are not found.
 - Always include aiDiagnosis and aiTreatment — even if redundant.
 - If AI guesses are used, always add a warning in the warnings array.
 - If no warnings are needed, return an empty array.
-- If the input text is irrelevant or incomplete, return:
+- If the text is irrelevant or incomplete, return:
 
+\`\`\`json
 {}
+\`\`\`
 `;
-
 
 function sanitizeJSON(jsonString) {
   let sanitized = jsonString.trim();
@@ -103,15 +108,16 @@ function sanitizeJSON(jsonString) {
   return sanitized.trim();
 }
 
+
+
 router.post('/analyze', async (req, res) => {
-  //console.log('[ENV] AZURE_OPENAI_DEPLOYMENT =', process.env.AZURE_OPENAI_DEPLOYMENT);
-  console.log('[DEBUG] Incoming request body:', req.body);
+  console.log('[ENV] AZURE_OPENAI_DEPLOYMENT =', process.env.AZURE_OPENAI_DEPLOYMENT);
 
   try {
-    const { text, ehr_id, doctor_name="unknow Doctor" } = req.body;
-    //const analysisText = caseId ? (mockCases[caseId]?.text || text) : text;
+    const { text, caseId } = req.body;
+    const analysisText = caseId ? (mockCases[caseId]?.text || text) : text;
 
-    if (!text || text.length < 10) {
+    if (!analysisText || analysisText.length < 30) {
       //return res.status(400).json({ error: 'Text is required' });
       return res.status(400).json({
         status: "error",
@@ -132,10 +138,10 @@ router.post('/analyze', async (req, res) => {
         body: {
           messages: [
             { role: 'system', content: systemPrompt },
-            { role: 'user', content: text }
+            { role: 'user', content: analysisText }
           ],
           temperature: 0.7,
-          max_tokens: 400,
+          max_tokens: 600,
          //response_format: 'json'
           //response_format: { type: 'json_object' }
         },
@@ -180,70 +186,6 @@ router.post('/analyze', async (req, res) => {
 
     //console.log("Warnings:", aiResponse.warnings || 'N/A');
     console.log("End of AI response\n");
-    const visitDate = new Date().toISOString();
-  const flatComposition = {
-  "ctx/language": "en",
-  "ctx/territory": "FI",
-  "ctx/composer_name": doctor_name,
-  "voice_ehr_template.v0/category|value": "event",
-  "voice_ehr_template.v0/category|code": "433",
-  "voice_ehr_template.v0/category|terminology": "openehr",
-  "voice_ehr_template.v0/context/start_time": visitDate,
-  "voice_ehr_template.v0/context/setting|value": "home",
-  "voice_ehr_template.v0/context/setting|code": "225",
-  "voice_ehr_template.v0/context/setting|terminology": "openehr",
-  "voice_ehr_template.v0/problem_diagnosis/problem_diagnosis_name": aiResponse.report?.diagnosis || '',
-  "voice_ehr_template.v0/problem_diagnosis/comment": aiResponse.report?.OTHERS || '',
-  "voice_ehr_template.v0/problem_diagnosis/subject|name": "patient",
-  "voice_ehr_template.v0/symptom_sign_screening_questionnaire/any_event:0/description": aiResponse.report?.symptoms || '',
-  "voice_ehr_template.v0/symptom_sign_screening_questionnaire/any_event:0/time": visitDate,
-  "voice_ehr_template.v0/assisted_reproduction_treatment_cycle_summary/comment": "",
-  "voice_ehr_template.v0/assisted_reproduction_treatment_cycle_summary/last_updated": visitDate,
-  //"voice_ehr_template.v0/treatment_plan/description": aiResponse.report?.treatment || ''
-  "voice_ehr_template.v0/assisted_reproduction_treatment_cycle_summary/comment":aiResponse.report?.treatment || '',
-};
-
-    const ehrResponse = await axios.post(
-      `http://localhost:8080/ehrbase/rest/openehr/v1/ehr/${ehr_id}/composition?templateId=voice_ehr_template.v0&format=FLAT`,
-    //`http://localhost:8080/ehrbase/rest/openehr/v1/composition?ehrId=${ehr_id}&templateId=voice_ehr_template.v0&format=FLAT`,
-    //`http://localhost:8080/ehrbase/rest/openehr/v1/composition?ehrId=${ehr_id}&templateId=voice_ehr_template.v0&format=FLAT`,
-    //`http://localhost:8080/rest/ecis/v1/composition?ehrId=${ehr_id}&templateId=voice_ehr_template.v0&format=FLAT`,
-    //`http://localhost:8080/rest/openehr/v1/composition?ehrId=${ehr_id}&templateId=voice_ehr_template.v0&format=FLAT`,
-      flatComposition,
-      { headers: { 
-        "Content-Type": 'application/json',
-        //'Content-Type': 'application/openehr.wt.flat+json',
-        'Prefer': 'return=representation',
-        'Accept': 'application/json'
-       } }
-    );
-   
-
-    //const compositionId = ehrResponse.data?.uid?.value;
-    let compositionId =  ehrResponse.data?.uid?.value || ehrResponse.data?.["voice_ehr_template.v0/_uid"];
-    if (!compositionId) {
-       console.warn('[WARNING] Composition UID not found in response:', ehrResponse.data);
-    }
-    console.log('EHRbase composition ID:', compositionId);
-    //write to supabase
-    await supabase.from("medical_reports").insert({
-      ehr_id,
-      composition_id: compositionId,
-      doctor_name,
-      symptoms: aiResponse.report?.symptoms,
-      diagnosis: aiResponse.report?.diagnosis,
-      treatment: aiResponse.report?.treatment,
-      others: aiResponse.report?.OTHERS || aiResponse.report?.others, 
-      //symptoms: flatComposition['ehr_data/symptoms'],
-      //diagnosis: flatComposition['ehr_data/diagnosis'],
-      //treatment: flatComposition['ehr_data/treatment'],
-      //others: flatComposition['ehr_data/others'],
-      ai_diagnosis: aiResponse.report?.aiDiagnosis || null,
-      ai_treatment: aiResponse.report?.aiTreatment || null,
-      warnings: JSON.stringify(aiResponse.warnings),
-      create_at: visitDate,
-      patient_details: aiResponse.report?.patientDetails || null
-           });
 
     return res.status(200).json({
       status: "success",
@@ -270,7 +212,30 @@ router.post('/analyze', async (req, res) => {
   }
 });
 
+router.post('/mock-test', async (req, res) => {
+  const { caseId = 'case1' } = req.body;
 
+  if (!mockCases[caseId]) {
+    return res.status(400).json({
+      error: 'Invalid caseId',
+      availableCases: Object.keys(mockCases)
+    });
+  }
+
+  console.log(`[TEST] Running mock case: ${caseId} - ${mockCases[caseId].description}`);
+  req.body = { caseId };
+
+  // 🔁 Use axios to call your own backend mock handler
+  try {
+    const response = await axios.post('http://localhost:5000/api/analysis/analyze', req.body);
+    return res.json(response.data);
+  } catch (err) {
+    return res.status(500).json({
+      error: 'Failed to call /api/analyze',
+      details: err.message
+    });
+  }
+});
 
 module.exports = router;
 
