@@ -168,12 +168,14 @@ export default function PatientPage() {
       }
 
       setStructuredEhr(result.data);
+      console.log('[DEBUG] structuredEhr =', JSON.stringify(result.data, null, 2));
     } catch (error: any) {
       console.error('Error processing EHR:', error);
       setError(error.message || 'Failed to process EHR');
     } finally {
       setIsProcessing(false);
     }
+
   };
 
   return (
@@ -307,6 +309,7 @@ export default function PatientPage() {
                               placeholder="Enter diagnosis..."
                             />
                           </div>
+
                         </div>
                         <div>
                           <div className="font-semibold mb-2">Treatment</div>
@@ -318,6 +321,7 @@ export default function PatientPage() {
                               placeholder="Enter treatment..."
                             />
                           </div>
+
                         </div>
                         {structuredEhr.report?.OTHERS && (
                           <div>
@@ -329,6 +333,7 @@ export default function PatientPage() {
                                 className="w-full p-2 border min-h-[80px] focus:border-gray-500 focus:ring-1 focus:ring-gray-500"
                                 placeholder="Enter additional notes..."
                               />
+
                             </div>
                           </div>
                         )}
@@ -341,6 +346,51 @@ export default function PatientPage() {
                               <li key={index}>{warning}</li>
                             ))}
                           </ul>
+    {/* AI Suggested Diagnosis */}
+    {structuredEhr.report?.aiDiagnosis?.source === 'ai' &&
+      structuredEhr.report?.aiDiagnosis?.possibleConditions?.length > 0 && (
+        <div className="mt-4">
+          <div className="font-semibold text-gray-700">AI Suggested Diagnosis</div>
+          <div className="text-sm text-gray-600 mb-2">
+            {structuredEhr.report.aiDiagnosis.possibleConditions.join(', ')}
+          </div>
+          <button
+            className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+            onClick={() =>
+              handleFieldChange(
+                'diagnosis',
+                structuredEhr.report.aiDiagnosis.possibleConditions.join(', ')
+              )
+            }
+          >
+            Use this suggestion
+          </button>
+        </div>
+    )}
+
+    {(!structuredEhr.report?.treatment || structuredEhr.report?.treatment?.trim() === '') &&
+  structuredEhr.report?.aiTreatment?.source === 'ai' &&
+  structuredEhr.report?.aiTreatment?.suggestions?.length > 0 && (
+    <div className="mt-4">
+      <div className="font-semibold text-gray-700">AI Suggested Treatment</div>
+      <div className="text-sm text-gray-600 mb-2">
+        {structuredEhr.report.aiTreatment.suggestions.join(', ')}
+      </div>
+      <button
+        className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+        onClick={() =>
+          handleFieldChange(
+            'treatment',
+            structuredEhr.report.aiTreatment.suggestions.join(', ')
+          )
+        }
+      >
+        Use this suggestion
+      </button>
+    </div>
+)}
+
+                          
                         </div>
                       )}
                     </div>

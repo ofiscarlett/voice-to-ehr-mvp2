@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { EHR } from '@/types';
+import { useRouter } from 'next/navigation'; 
 
 async function fetchPreviousEHRs(patientId: string): Promise<EHR[]> {
+  
   const res = await fetch(`/api/patients/${patientId}/ehrs`);
   if (!res.ok) {
     throw new Error('Failed to fetch EHRs');
@@ -15,6 +17,7 @@ export default function PreviousEHRs({ patientId }: { patientId: string }) {
   const [ehrs, setEhrs] = useState<EHR[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     async function loadEHRs() {
@@ -23,6 +26,7 @@ export default function PreviousEHRs({ patientId }: { patientId: string }) {
         const fetchedEHRs = await fetchPreviousEHRs(patientId);
         setEhrs(fetchedEHRs);
         setError(null);
+        console.log('Fetched EHRs:', fetchedEHRs);  
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An unknown error occurred');
       } finally {
@@ -50,7 +54,12 @@ export default function PreviousEHRs({ patientId }: { patientId: string }) {
                 <p className="font-bold text-gray-800">{ehr.date}</p>
                 <p className="text-sm text-gray-600 mt-1">{ehr.summary}</p>
               </div>
-              <button className="bg-[#D4D4D4] text-black px-4 py-2 text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-colors duration-200 cursor-pointer">
+              <button 
+                onClick={() => {
+                  console.log('PUSHING TO:', `/patient/${patientId}/ehr/view/${ehr.compositionId}`);
+                  router.push(`/patient/${patientId}/ehr/view/${ehr.compositionId}`);
+                    }}              
+                  className="bg-[#D4D4D4] text-black px-4 py-2 text-xs font-semibold flex items-center gap-2 hover:bg-black hover:text-white transition-colors duration-200 cursor-pointer">
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
                   <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
                 </svg>

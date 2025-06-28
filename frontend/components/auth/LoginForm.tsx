@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/components/auth/AuthContext';
 import Image from 'next/image';
 
 export default function LoginForm() {
@@ -9,10 +10,21 @@ export default function LoginForm() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
-
+  const { login } = useAuth();
+/* change login function to get doctor name
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (username === 'admin' && password === 'vtehr') {
+      router.push('/dashboard');
+    } else {
+      setError('Invalid username or password');
+    }
+  };
+*/
+const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const success = await login(username, password); 
+    if (success) {
       router.push('/dashboard');
     } else {
       setError('Invalid username or password');

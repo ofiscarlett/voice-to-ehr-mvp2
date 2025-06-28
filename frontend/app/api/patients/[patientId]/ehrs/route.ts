@@ -1,107 +1,98 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { EHR } from '@/types';
+import { createClient } from '@supabase/supabase-js';
+//import 'dotenv/config';
 
-// ====================================================================================
-// DATABASE INTEGRATION POINT
-// ====================================================================================
-// This is a mock data source. In a real application, this data would come from your
-// database. The functions below would interact with your database client (e.g., Prisma).
-// ====================================================================================
+///get data from supabase
+function getSupabaseClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!;
 
-const dummyEHRs: EHR[] = [
-  {
-    id_number: '120379-345A',
-    ehr_id: 'a4f11899-8231-4995-bdc2-09fd2559282a',
-    date: '2023-03-15',
-    summary: 'Follow-up consultation for seasonal allergies.',
-  },
-  {
-    id_number: '120379-345A',
-    ehr_id: 'a4f11899-8231-4995-bdc2-09fd2559282a',
-    date: '2023-01-20',
-    summary: 'Annual physical examination. All vitals normal.',
-  },
-  {
-    id_number: '120379-345A',
-    ehr_id: 'ehr-3',
-    date: '2022-11-02',
-    summary: 'Prescribed medication for back pain.',
-  },
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Missing Supabase environment variables');
+  }
 
-  //{ ehr_id: 'ehr-1', date: '2023-03-15', summary: 'Follow-up consultation for seasonal allergies.' },
-  //{ ehr_id: 'ehr-2', date: '2023-01-20', summary: 'Annual physical examination. All vitals normal.' },
-  //{ ehr_id: 'ehr-3', date: '2022-11-02', summary: 'Prescribed medication for back pain.' },
-];
-/*
+  return createClient(supabaseUrl, supabaseKey);
+}
+
+
+console.log('SUPABASE_URL:', process.env.SUPABASE_URL);
+console.log('SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY);
+
 export async function GET(
-  request: Request,
-  { params }: { params: { patientId: string } }
+  request: NextRequest,
+   { params}: { params: { patientId: string } }
 ) {
-  const patientId = params.patientId;
-*/
-export async function GET(
-  request: Request,
-  context: { params: { patientId: string } }
-) {
-  const patientId = context.params.patientId;
+   const supabase = getSupabaseClient(); 
 
-  console.log('Fetching EHRs for:', patientId);
+  const id_number  = params.patientId;
+  const { data: patientData, error: patientIdError} = await supabase
+  .from("patients")
+  .select("ehr_id")
+  .eq("id_number", id_number)
+  .single();
+  if (patientIdError || !patientData?.ehr_id) {
+    return NextResponse.json(
+      { error: 'Patient ID not found' }, 
+      { status: 404 });
+  }
+  const ehr_id =  patientData.ehr_id;
+  const { data: reports, error: erportError } = await supabase
+  .from('medical_reports')
+  .select('composition_id, visit_date, symptoms, treatment')
+  .eq('ehr_id', ehr_id)
+  .order('visit_date', { ascending: false });
+  if (erportError) {
+    console.error('Error fetching medical reports:', erportError);
+    return NextResponse.json({ error: 'Failed to fetch medical reports' }, { status: 500 });
+  }
+const formattedReports = reports.map((report) => ({
+  compositionId: report.composition_id,
+  //composition_id: report.composition_id,
+  date: report.visit_date,
+  summary: `Symptoms: ${report.symptoms}, Treatment: ${report.treatment}` || '(No summary)',
+}));
 
-  return new Response(JSON.stringify({ message: `EHRs for ${patientId}` }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' },
-  });
- // Extract ehr_id from the URL if needed
-  
-  // ====================================================================================
-  // DATABASE INTEGRATION: FETCH EHRs
-  // ====================================================================================
-  // Replace the mock data below with a database query.
-  // Example using a hypothetical database client (like Prisma):
-  // const ehrs = await db.ehr.findMany({ where: { patientId: patientId } });
-  // return NextResponse.json(ehrs);
-  // ====================================================================================
+  return NextResponse.json(formattedReports, { status: 200 });
 
-  console.log(`Fetching EHRs for patient ${patientId}`);
-  // We return the same dummy data for all patients for demonstration purposes.
-  return NextResponse.json(dummyEHRs);
 }
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { patientId: string } }
 ) {
-  const patientId = params.patientId;
+   const supabase = getSupabaseClient();
+  const id_number = params.patientId;
   const newEHR = await request.json();
   
-  // ====================================================================================
-  // DATABASE INTEGRATION: CREATE EHR
-  // ====================================================================================
-  // Replace the console log and in-memory push with a database creation call.
-  // Example using a hypothetical database client (like Prisma):
-  // const createdEHR = await db.ehr.create({
-  //   data: {
-  //     ...newEHR,
-  //     patientId: patientId,
-  //   },
-  // });
-  // return NextResponse.json({ success: true, ehr: createdEHR }, { status: 201 });
-  // ====================================================================================
-  
-  console.log(`Saving new EHR for patient ${patientId}:`, newEHR);
-  
-  // This is temporary for the mock API. Remove when using a real database.
-  //dummyEHRs.unshift({ ...newEHR, id: `ehr-${Date.now()}` });
-  dummyEHRs.unshift({
-    ...newEHR,
-    id_number: patientId, // Assuming newEHR has an id_number field
-    ehr_id: `ehr-${Date.now()}`, // Generate a unique ehr_id
-    date: new Date().toISOString(), // Set the current date as the EHR date
-    summary: newEHR.summary || 'No summary provided', // Ensure summary is set
-  });
 
-  
+  const { data: patientData, error: patientError } = await supabase
+    .from("patients")
+    .select("ehr_id")
+    .eq("id_number", id_number)
+    .single();
 
+  if (patientError || !patientData?.ehr_id) {
+    return NextResponse.json({ error: 'Patient not found' }, { status: 404 });
+  }
 
-  return NextResponse.json({ success: true, ehr: newEHR }, { status: 201 });
-} 
+  const ehr_id = patientData.ehr_id;
+
+  const { error: insertError } = await supabase
+    .from("medical_reports")
+    .insert({
+      ehr_id,
+      composition_id: newEHR.compositionId,
+      visit_date: newEHR.date,
+      symptoms: newEHR.symptoms,
+      treatment: newEHR.treatment
+    });
+
+  if (insertError) {
+    return NextResponse.json({ error: 'Insert failed' }, { status: 500 });
+  }
+console.log('Incoming patientId:', params.patientId);
+console.log('Request URL:', request.url);
+  return NextResponse.json({ success: true }, { status: 201 });
+  console.log('Incoming patientId:', params.patientId);
+}

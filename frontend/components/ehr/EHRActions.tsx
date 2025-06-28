@@ -22,45 +22,70 @@ interface EHRActionsProps {
 export default function EHRActions({ onSave, disabled = false, structuredEhr }: EHRActionsProps) {
   const { doctor } = useAuth();
   const router = useRouter();
+  const [compositionId, setCompositionId] = useState<string | null>(null); 
   const [showModal, setShowModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const params = useParams();
+  const doctorName = doctor?.name || 'unknown'; // Fallback to 'unknown' if doctor is not available
   const patientId = params?.id as string;
   const ehrId = patientMap[patientId];
 
-  const handleSave = async () => {
-    if (!structuredEhr) return;
-    
-    setIsSaving(true);
-    try {
-      const response = await fetch('/api/save-ehr-api', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        //body: JSON.stringify({ structuredEhr }),
-          body: JSON.stringify({
-          ehr_id: patientMap[patientId], // or from API
-          doctor_name: doctor?.name || 'unknown',
-          structuredEhr,
-        }),
-      });
+const handleSave = async () => {
+  const symptoms = structuredEhr?.report?.symptoms;
+  const diagnosis = structuredEhr?.report?.diagnosis;
+  const treatment = structuredEhr?.report?.treatment;
+  const isSymptomsEmpty = typeof symptoms !== 'string' || symptoms.trim() === '';
+  const isDiagnosisEmpty = typeof diagnosis !== 'string' || diagnosis.trim() === '';
+  const isTreatmentEmpty = typeof treatment !== 'string' || treatment.trim() === '';
+    if (!structuredEhr || isSymptomsEmpty || isDiagnosisEmpty || isTreatmentEmpty) {
+    alert('Please complete all required fields (Symptoms, Diagnosis, Treatment) before saving.');
+    console.warn('[BLOCKED SAVE] One or more required fields are missing or empty.');
+    return;
+  }
 
-      if (!response.ok) {
-        throw new Error('Failed to save EHR');
-      }
 
-      if (onSave) {
-        onSave();
-      }
-      setShowModal(true);
-    } catch (error) {
-      console.error('Error saving EHR:', error);
-      // You might want to show an error message to the user here
-    } finally {
-      setIsSaving(false);
-    }
+  setIsSaving(true);
+
+  const patientId = params?.id as string;
+  const ehrId = patientMap[patientId];
+  const doctorName = doctor?.name || 'unknown';
+
+  const payload = {
+    ehr_id: ehrId,
+    doctor_name: doctorName,
+    hospital_name: 'Oulu Lifecare Experimental Hospital',
+    structuredEhr,
   };
+
+  try {
+    const patientId = params?.id as string;
+    const ehrId = patientMap[patientId];
+    const doctorName = doctor?.name || 'unknown';
+
+    const response = await fetch('/api/save-ehr-api', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text(); // read response body even when not ok
+      console.error('Failed response body:', errorText);
+      throw new Error('Failed to save EHR');
+    }
+
+    const result = await response.json();
+
+    setCompositionId(result.composition_id || null);
+    if (onSave) onSave();
+    setShowModal(true);
+  } catch (error) {
+    console.error('Error saving EHR:', error);
+  } finally {
+    setIsSaving(false);
+  }
+};
+
 
   return (
     <>
@@ -69,7 +94,7 @@ export default function EHRActions({ onSave, disabled = false, structuredEhr }: 
           onClick={handleSave}
           disabled={disabled || !structuredEhr || isSaving}
           className={`w-full bg-black text-white p-4 flex items-center justify-center gap-2 text-[14px] transition-colors duration-200 ease-in-out
-            ${!(disabled || !structuredEhr || isSaving) ? 'hover:bg-[#525252] cursor-pointer' : 'cursor-not-allowed'}`}
+            ${!(disabled || !structuredEhr || isSaving) ? 'hover:bg-[#525252] cursor-pointer' : 'cursor-not-allowed opacity-50'}`}
         >
           {isSaving ? 'Saving...' : 'Save EHR'}
           <Image src="/icons/save.svg" alt="save" width={16} height={16} style={{ filter: 'invert(100%)' }} />
@@ -100,6 +125,9 @@ export default function EHRActions({ onSave, disabled = false, structuredEhr }: 
             <div className="flex flex-col items-start w-full mt-[60px] mb-0" style={{gap: '24px'}}>
               <span className="text-[16px] text-[#757575] text-left">• Close this modal window to continue modifying from where you left.</span>
               <span className="text-[16px] text-[#757575] text-left">• Go back to Patient's dashboard for starting new EHR.</span>
+                {compositionId && (
+              <span className="text-[14px] text-[#333] font-mono">Composition ID: <span className="text-blue-700">{compositionId}</span></span>
+          )}
             </div>
             <button
               onClick={() => router.push('/dashboard')}

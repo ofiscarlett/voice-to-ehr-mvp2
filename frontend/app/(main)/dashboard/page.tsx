@@ -2,9 +2,17 @@
 
 import { useRouter } from 'next/navigation';
 import PatientList from '@/components/patient/PatientList';
+import { useAuth } from '@/components/auth/AuthContext';
+import { useEffect } from 'react';
 
 export default function DashboardPage() {
   const router = useRouter();
+    const { doctor } = useAuth();
+
+  useEffect(() => {
+    console.log('[DEBUG] doctor from context:', doctor);
+  }, [doctor]);
+
 
   return (
     <div className="min-h-screen bg-white flex flex-col">

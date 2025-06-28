@@ -16,11 +16,8 @@ flatComposition = require('@supabase/supabase-js').flatComposition;
 //console.log('[DEBUG] dotenv config result:', result);
 //console.log('[DEBUG] Current AZURE_OPENAI_DEPLOYMENT =', process.env.AZURE_OPENAI_DEPLOYMENT);
 
-//const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-4';
 const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-4-2';
-
 const mockCases = require('./mockCases.json'); // Import mock cases from JSON file
-
 const router = express.Router();
 
 const client = new createAzureClient(
@@ -160,29 +157,43 @@ router.post('/analyze', async (req, res) => {
 
       
       //console.log("Patient Details:", aiResponse.report?.patientDetails || 'N/A');
+    const doctorDiagnosisMissing = !aiResponse.report?.diagnosis || aiResponse.report.diagnosis.trim().toLowerCase() === 'n/a';
+    const doctorTreatmentMissing = !aiResponse.report?.treatment || aiResponse.report.treatment.trim().toLowerCase() === 'n/a';
 
-      if (!aiResponse.report?.diagnosis) {
-        aiResponse.warnings.push("No diagnosis was provided by the doctor in the input text.");
-      }
-      if (!aiResponse.report?.treatment) {
-        aiResponse.warnings.push("No treatment or diagnosis was provided by the doctor in the input text.");
-      }
 
-      if (aiResponse.report?.aiDiagnosis?.source === 'ai') {
-        aiResponse.warnings.push("AI-generated diagnosis is for reference only.");
-        console.log(`AI Diagnosis (source: ${aiResponse.report.aiDiagnosis.source}):`, aiResponse.report.aiDiagnosis.possibleConditions);
-      }
-      if (aiResponse.report?.aiTreatment?.source === 'ai') {
-        aiResponse.warnings.push("AI-suggested treatment is for reference only.");
-        
+    if (doctorDiagnosisMissing && aiResponse.report?.aiDiagnosis?.source === 'ai') {
+      aiResponse.warnings.push("No diagnosis was provided by the doctor in the input text.");
+      aiResponse.warnings.push("AI-generated diagnosis is for reference only.");
     }
+
+    if (doctorTreatmentMissing && aiResponse.report?.aiTreatment?.source === 'ai') {
+      aiResponse.warnings.push("No treatment was provided by the doctor in the input text.");
+      aiResponse.warnings.push("AI-suggested treatment is for reference only.");
+    }
+
+    //if AI provide diagnosis and treatment, but doctor did not provide them, add warnings
+    if (aiResponse.report?.aiDiagnosis?.source !== 'doctor') {
+      aiResponse.warnings.push("No diagnosis was provided by the doctor in the input text.");
+      aiResponse.warnings.push("AI-generated diagnosis is for reference only.");
+      console.log(`AI Diagnosis (source: ai):`, aiResponse.report?.aiDiagnosis?.possibleConditions);
+    }
+
+    if (aiResponse.report?.aiTreatment?.source !== 'doctor') {
+      aiResponse.warnings.push("No treatment was provided by the doctor in the input text.");
+      aiResponse.warnings.push("AI-suggested treatment is for reference only.");
+    }
+
+// cancel repeated warnings
+
+    aiResponse.warnings = [...new Set(aiResponse.warnings)];
+
     console.log('\n[AI STRUCTURED RESPONSE]');
-    console.log("Symptoms:", aiResponse.report?.symptoms || 'N/A');
+    //console.log("Symptoms:", aiResponse.report?.symptoms || 'N/A');
     //console.log("Diagnosis:", aiResponse.report?.diagnosis || 'N/A');
-    //console.log("Treatment:", aiResponse.report?.treatment || 'N/A');
+    console.log("Treatment:", aiResponse.report?.treatment || 'N/A');
     //console.log("OTHERS:", aiResponse.report?.OTHERS || 'N/A');
     //console.log("AI Diagnosis:", JSON.stringify(aiResponse.report?.aiDiagnosis, null, 2) || 'N/A');
-    //console.log("AI Treatment:", JSON.stringify(aiResponse.report?.aiTreatment, null, 2) || 'N/A');
+    console.log("AI Treatment:", JSON.stringify(aiResponse.report?.aiTreatment, null, 2) || 'N/A');
 
     //console.log("Warnings:", aiResponse.warnings || 'N/A');
     console.log("End of AI response\n");

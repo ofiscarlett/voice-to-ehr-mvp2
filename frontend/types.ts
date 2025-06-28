@@ -7,6 +7,7 @@ export interface Patient {
 export interface EHR {
   id_number: string;
   date: string;
+  compositionId: string;
   summary: string;
   ehr_id?: string; // Optional, used when creating new EHRs 
 } 

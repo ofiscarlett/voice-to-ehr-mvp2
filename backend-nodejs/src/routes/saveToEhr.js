@@ -3,7 +3,7 @@ const express = require('express');
 const axios = require('axios');
 const { createClient } = require('@supabase/supabase-js');
 
-const router = express.Router(); // ✅ 正確名稱是 router，不是 saveRouter
+const router = express.Router(); 
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -11,8 +11,8 @@ const supabase = createClient(
 );
 
 router.post('/', async (req, res) => {  
-  const { ehr_id, structuredEhr, doctor_name = 'unknown' } = req.body;
-
+  const { ehr_id, structuredEhr, doctor_name = 'unknown',hospital_name = 'Oulu Lifecare Experimental Hospital' } = req.body;
+  console.log('[BACKEND] Receving Body:', req.body);
   if (!ehr_id || !structuredEhr) {
     return res.status(400).json({ message: 'Missing ehr_id or structuredEhr' });
   }
@@ -52,15 +52,26 @@ router.post('/', async (req, res) => {
       }
     );
 
-    const compositionId = ehrResponse.data?.uid?.value;
+    //const compositionId = ehrResponse.data?.uid?.value;
+   // let compositionId = ehrResponse.data?.uid?.value || ehrResponse.data?.compositionUid;
+   let compositionId = 
+  ehrResponse.data?.uid?.value ||
+  ehrResponse.data?.compositionUid ||
+  ehrResponse.data?.["voice_ehr_template.v0/_uid"];
+
+  console.log('[DEBUG] EHRbase response:', ehrResponse.data);
+  console.log('[DEBUG] compositionId:', compositionId);
+  console.log('[SAVE-EHR] EHRbase response body:', ehrResponse.data);
     if (!compositionId) {
       console.warn('[WARNING] No composition ID found');
     }
 
+    const { data, error:insertError } = 
     await supabase.from("medical_reports").insert({
       ehr_id,
       composition_id: compositionId,
       doctor_name,
+      hospital_name,
       symptoms: structuredEhr.report?.symptoms,
       diagnosis: structuredEhr.report?.diagnosis,
       treatment: structuredEhr.report?.treatment,
@@ -68,9 +79,16 @@ router.post('/', async (req, res) => {
       ai_diagnosis: structuredEhr.report?.aiDiagnosis,
       ai_treatment: structuredEhr.report?.aiTreatment,
       warnings: JSON.stringify(structuredEhr.warnings || []),
-      create_at: visitDate,
-      patient_details: structuredEhr.report?.patientDetails || null
+      visit_date: visitDate,
+      //patient_details: structuredEhr.report?.patientDetails || null
     });
+    if (insertError) {
+      console.error('[supabase] failed insert to supabase:', insertError);
+      return res.status(500).json({ 
+        message: 'Failed to save to Supabase', 
+        error: insertError.message,
+      });
+    }
 
     return res.status(200).json({
       status: 'success',

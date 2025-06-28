@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
 interface Doctor {
   name: string;
@@ -16,12 +16,24 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [doctor, setDoctor] = useState<Doctor | null>(null);
+  //new code to get doctor name from login
+    useEffect(() => {
+      const storedDoctor = localStorage.getItem('doctor');
+      if (storedDoctor) {
+        //console.log('[DEBUG] restoring doctor from localStorage:', storedDoctor);
+        setDoctor(JSON.parse(storedDoctor));
+      } else {
+        //console.log('[DEBUG] no doctor in localStorage');
+      }
+    }, []);
 
   const login = async (username: string, password: string) => {
     // This is a dummy authentication
     // In a real app, this would make an API call to your backend
     if (username === 'admin' && password === 'vtehr') {
-      setDoctor({ name: 'Dr. Ilponen' });
+      const doctorInfo = { name: 'Dr. Ilponen' };
+      setDoctor(doctorInfo);
+       localStorage.setItem('doctor', JSON.stringify(doctorInfo));
       return true;
     }
     return false;
