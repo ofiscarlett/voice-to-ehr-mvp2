@@ -43,7 +43,7 @@ NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY=...
 EHRBASE_URL=http://localhost:8080/ehrbase
 ```
 Front-end run at 
-3️⃣ Start the App (Development Mode)
+#  3️⃣ Start the App (Development Mode)
 ```bash
 npm run dev
 ```
@@ -65,11 +65,9 @@ npm run dev
 
 ☁️ Supabase (for doctor dashboard & summary view)
 
-# 🧪 5️⃣ Testing & Validation
-💡 Missing diagnosis/treatment? AI will suggest options.
-⚠️ Required fields must be filled before saving.
-🔄 Saved records will show up under Previous EHRs.
-🆔 Each visit gets a unique Composition ID.
+# 🧪 5️⃣ Others improvements
+1. 💡 Missing diagnosis/treatment? AI will suggest options.
+2. ⚠️ Required fields must be filled before saving.
+3. 🔄 Saved records will show up under Previous EHRs.
+4. 🆔 Each visit gets a unique Composition ID.
 
-
-The backend will run on http://localhost:5000
