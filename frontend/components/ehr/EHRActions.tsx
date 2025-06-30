@@ -9,6 +9,7 @@ import Image from 'next/image';
 //get ehr id from patientmap
 import { useParams } from 'next/navigation';
 import { patientMap } from '@/components/libs/patientMap';
+import { toast } from 'react-hot-toast';
 
 
 interface EHRActionsProps {
@@ -37,8 +38,25 @@ const handleSave = async () => {
   const isSymptomsEmpty = typeof symptoms !== 'string' || symptoms.trim() === '';
   const isDiagnosisEmpty = typeof diagnosis !== 'string' || diagnosis.trim() === '';
   const isTreatmentEmpty = typeof treatment !== 'string' || treatment.trim() === '';
+
     if (!structuredEhr || isSymptomsEmpty || isDiagnosisEmpty || isTreatmentEmpty) {
-    alert('Please complete all required fields (Symptoms, Diagnosis, Treatment) before saving.');
+    //alert('Please complete all required fields (Symptoms, Diagnosis, Treatment) before saving.');
+      toast.custom((t) => (
+        <div
+          onClick={() => toast.dismiss(t.id)}
+          className="bg-pink-100 border border-blue-500 text-red-800 px-6 py-4 rounded-xl text-lg font-semibold shadow-lg cursor-pointer"
+          style={{
+            maxWidth: '600px',
+            margin: '0 auto',
+            textAlign: 'center',
+          }}
+        >
+        Please complete all required fields before saving. (Click to dismiss)
+        </div>
+      ), {
+        duration: Infinity,
+        position: 'top-center',
+      });
     console.warn('[BLOCKED SAVE] One or more required fields are missing or empty.');
     return;
   }
