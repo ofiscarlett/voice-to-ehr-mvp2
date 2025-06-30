@@ -1,6 +1,7 @@
 # Voice-to-EHR
 
-A fullstack application that converts doctor's voice recordings into structured Electronic Health Records (EHR).
+A fullstack application that converts doctor's voice recordings into structured Electronic Health Records (EHR) using AI, following the openEHR standard.
+It combines Next.js, Node.js, Supabase, and EHRbase to create an end-to-end voice-to-EHR workflow.
 
 ## Technology Stack
 
@@ -15,55 +16,37 @@ A fullstack application that converts doctor's voice recordings into structured 
 - According to Figma / ER / MVP Plan
 
 ## Setup Instructions
-
-### Frontend Setup
-
-1. Navigate to the frontend directory:
+# 1️⃣ Clone the Repository & Install Dependencies
 ```bash
-cd frontend
-```
+git clone https://github.com/ofiscarlett/voice-to-ehr-mvp2.git
+cd voice-to-ehr-mvp2
 
-2. Install dependencies:
-```bash
+cd backend-nodejs
+npm install
+
+cd ../frontend
 npm install
 ```
+# 2️⃣ Setup Environment Variables
+✅ Supabase
+You need to get your own supabase account and project
+```bash
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY=...
 
-3. Run the development server:
+```
+✅ EHRbase (Backend only)
+```bash
+EHRBASE_URL=http://localhost:8080/ehrbase
+```
+
+3. Run the development server(front-end and back-end are same):
 ```bash
 npm run dev
 ```
 
 The frontend will run on http://localhost:3000
 
-### Backend Setup
 
-1. Navigate to the backend directory:
-```bash
-cd backend
-```
-
-2. Create a virtual environment:
-```bash
-python -m venv venv
-```
-
-3. Activate the virtual environment:
-```bash
-# Windows
-venv/Scripts/activate
-
-# Linux/Mac
-source venv/bin/activate
-```
-
-4. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-5. Run the backend server:
-```bash
-python wsgi.py
-```
 
 The backend will run on http://localhost:5000
