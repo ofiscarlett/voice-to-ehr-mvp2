@@ -4,9 +4,10 @@ A fullstack application that converts doctor's voice recordings into structured 
 
 ## Technology Stack
 
-- **Frontend**: Next.js, React, TypeScript, TailwindCSS
-- **Backend**: Flask, Python
+- **Frontend**: Next.js, React, TypeScript, TailwindCSS, toast
+- **Backend**: JavaScript, Linux, Java
 - **Voice Processing**: Web Audio API, SpeechRecognition
+- **Database**: Cloud database supabase, local prostgral 
 - **Data Format**: JSON
 
 ## Features
