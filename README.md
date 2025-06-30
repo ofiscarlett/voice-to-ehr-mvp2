@@ -40,7 +40,7 @@ NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY=...
 EHRBASE_URL=http://localhost:8080/ehrbase
 ```
 
-3. Run the development server(front-end and back-end are same):
+3️⃣ Start the App (Development Mode)
 ```bash
 npm run dev
 ```
