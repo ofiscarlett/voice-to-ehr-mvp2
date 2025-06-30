@@ -1,15 +1,17 @@
 # Voice-to-EHR
 
-A fullstack application that converts doctor's voice recordings into structured Electronic Health Records (EHR) using AI, following the openEHR standard.
+A application that converts doctor's voice recordings into structured Electronic Health Records (EHR) using AI, following the openEHR standard.
 It combines Next.js, Node.js, Supabase, and EHRbase to create an end-to-end voice-to-EHR workflow.
+Video Demo: (https://youtu.be/NejdSlW5hR8 )
 
 ## Technology Stack
 
 - **Frontend**: Next.js, React, TypeScript, TailwindCSS, toast
-- **Backend**: JavaScript, Linux, Java
-- **Voice Processing**: Web Audio API, SpeechRecognition
-- **Database**: Cloud database supabase, local prostgral 
+- **Backend**: Node.js(Exoress), Linux, Java, Azure OpenAI
+- **Voice Processing**: Web Audio API, SpeechRecognition, LLM
+- **Database**: Supabase(Postgre SQL) 
 - **Data Format**: JSON
+- **EHR Engine**: EHRBase (OpenEHR)
 
 ## Features
 
@@ -39,14 +41,34 @@ NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY=...
 ```bash
 EHRBASE_URL=http://localhost:8080/ehrbase
 ```
-
+Front-end run at 
 3️⃣ Start the App (Development Mode)
 ```bash
 npm run dev
 ```
+# 🎤 4️⃣ Try the Voice-to-EHR Workflow
 
-The frontend will run on http://localhost:3000
+1. The frontend will run on http://localhost:3000, Go to http://localhost:3000
 
+2. Login as a doctor (demo account or hardcoded user)
+
+3. Select a patient → Click Create EHR
+
+4. Record voice → Transcribe → Start EHR
+
+5. I processes input and fills out structured fields
+
+6. Click Save EHR – Data saved to:
+
+📦 EHRbase (openEHR format)
+
+☁️ Supabase (for doctor dashboard & summary view)
+
+# 🧪 5️⃣ Testing & Validation
+💡 Missing diagnosis/treatment? AI will suggest options.
+⚠️ Required fields must be filled before saving.
+🔄 Saved records will show up under Previous EHRs.
+🆔 Each visit gets a unique Composition ID.
 
 
 The backend will run on http://localhost:5000
