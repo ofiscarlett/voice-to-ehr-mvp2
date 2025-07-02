@@ -1,6 +1,6 @@
 # Voice-to-EHR
 
-A application that converts doctor's voice recordings into structured Electronic Health Records (EHR) using AI, following the openEHR standard.
+An application that converts doctor's voice recordings into structured Electronic Health Records (EHR) using AI, following the openEHR standard.
 It combines Next.js, Node.js, Supabase, and EHRbase to create an end-to-end voice-to-EHR workflow.
 
 ## Video Demo: (https://youtu.be/NejdSlW5hR8 )
